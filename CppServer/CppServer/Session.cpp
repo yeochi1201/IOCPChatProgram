@@ -9,26 +9,6 @@ void Session::Init(UINT32 index) {
 	this->index = index;
 }
 
-UINT32 Session::GetIndex() {
-	return index;
-}
-
-bool Session::IsConnect() {
-	return (clientSocket != INVALID_SOCKET);
-}
-
-SOCKET Session::GetSocket() {
-	return clientSocket;
-}
-
-char* Session::GetRecvBuffer() {
-	return recvBuf;
-}
-
-char* Session::GetSendBuffer() {
-	return sendBuf;
-}
-
 bool Session::OnConnect(HANDLE iocpHandle, SOCKET clientSocket) {
 	this->clientSocket = clientSocket;
 

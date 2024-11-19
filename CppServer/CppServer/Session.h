@@ -8,11 +8,21 @@ public:
 	Session();
 
 	void Init(UINT32 index);
-	UINT32 GetIndex();
-	bool IsConnect();
-	SOCKET GetSocket();
-	char* GetRecvBuffer();
-	char* GetSendBuffer();
+	UINT32 GetIndex() {
+		return index;
+	}
+	bool IsConnect() {
+		return (clientSocket != INVALID_SOCKET);
+	}
+	SOCKET GetSocket() {
+		return clientSocket;
+	}
+	char* GetRecvBuffer() {
+		return recvBuf;
+	}
+	char* GetSendBuffer() {
+		return sendBuf;
+	}
 
 	bool OnConnect(HANDLE iocpHandle, SOCKET clientSocket);
 	void Close();
