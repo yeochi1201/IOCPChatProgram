@@ -13,7 +13,6 @@ bool IOCPServer::InitIOCPHandler() {
 }
 #pragma endregion
 
-
 #pragma region SessionFunc
 void IOCPServer::CreateSessions(UINT16 maxClient) {
 	for (int i = 0; i < maxClient; i++) {

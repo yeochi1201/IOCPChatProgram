@@ -25,6 +25,7 @@ public:
 		WSACleanup();
 	}
 
+
 	bool CloseServer();
 	bool InitSocket(UINT16 portNum, UINT16 maxClient);
 	void DestroyThread();
@@ -49,6 +50,7 @@ private:
 	SOCKET listenSocket = INVALID_SOCKET;
 
 	HANDLE IOCP_Handler = INVALID_HANDLE_VALUE;
+
 
 	std::list<std::thread> workerThreads;
 	std::thread acceptThread;
