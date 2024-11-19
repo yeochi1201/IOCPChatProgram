@@ -16,16 +16,18 @@
 #include<windows.h>
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 
-class Listener {
+class IOCPServer {
 public:
 	bool CloseServer();
 	bool InitSocket(UINT16 portNum, UINT16 maxClient);
+	void DestroyThread();
+	bool SendPacket(UINT32 index, char* packet, int transferSize);
 	//Event Func 
 	virtual bool OnConnect(UINT32 index);
 	virtual bool OnDisconnect(UINT32 index);
 	virtual bool OnSend(Session* session, char* buf, DWORD transfersize);
 	virtual bool OnRecv(Session* session, char* buf,DWORD transfersize);
-
+	
 private:
 	SOCKET listenSocket;
 	CRITICAL_SECTION session_cs;
@@ -40,7 +42,6 @@ private:
 	bool InitIOCPHandler();
 
 	//Open Func
-	
 	bool ResetWinsock();
 	bool CreateSocket();
 	bool BindPort(UINT16 portNum);
@@ -55,11 +56,8 @@ private:
 	Session* GetEmptySession();
 	Session* GetSession(UINT32 index);
 
-	//IOCP Func
-	bool SendPacket(UINT32 index, char* packet, int transferSize);
-	
 	//Thread Func
-	void DestroyThread();
+	
 	bool CreateWorkerThread();
 	bool CreateAcceptThread();
 	DWORD WINAPI WorkerThreadFunc();

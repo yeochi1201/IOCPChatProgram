@@ -1,11 +1,11 @@
 #include <iostream>
-#include "Listener.h"
+#include "ChatServer.h"
 #include <string>
 
 int main() {
-	Listener* listener = new Listener();
+	ChatServer* Server = new ChatServer();
 
-	listener->InitSocket(25000, 100);
+	Server->Run(25000, 100);
 	while (true) {
 		std::string input;
 		std::getline(std::cin, input);
@@ -13,6 +13,6 @@ int main() {
 		if (input == "quit")
 			break;
 	}
-	listener->CloseServer();
+	Server->CloseServer();
 	return 0;
 }
