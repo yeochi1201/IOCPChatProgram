@@ -129,6 +129,8 @@
   <ItemGroup>
     <ClCompile Include="Listener.cpp" />
     <ClCompile Include="Program.cpp" />
+    <ClCompile Include="Session.cpp" />
+    <ClCompile Include="Session.h" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Listener.h" />

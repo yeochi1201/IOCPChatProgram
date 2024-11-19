@@ -13,94 +13,51 @@ bool Listener::InitIOCPHandler() {
 #pragma endregion
 
 #pragma region Event Func
-bool Listener::OnConnect(Session* session) {
+bool Listener::OnConnect(UINT32 index) {
+	printf("%d Client Connect", index);
 	return true;
 }
-bool Listener::OnDisconnect(Session* session) {
+
+bool Listener::OnDisconnect(UINT32 index) {
+	printf("%d Client Disconnect", index);
 	return true;
 }
+
 bool Listener::OnSend(Session* session, char* buf, DWORD transfersize) {
 	return true;
 }
+
 bool Listener::OnRecv(Session* session, char* buf, DWORD transfersize) {
 	return true;
 }
+
 #pragma endregion
 
 #pragma region SessionFunc
 void Listener::CreateSessions(UINT16 maxClient) {
 	for (int i = 0; i < maxClient; i++) {
 		Sessions.emplace_back();
-		Sessions[i].index = i;
+		Sessions[i].Init(i);
 	}
 }
 
 Session* Listener::GetEmptySession() {
 	for (Session session : Sessions) {
-		if (session.clientSocket == INVALID_SOCKET)
+		if (!session.IsConnect())
 			return &session;
 	}
 	return nullptr;
 }
 
+Session* Listener::GetSession(UINT32 index) {
+	return &(Sessions[index]);
+}
 #pragma endregion
 
 #pragma region IOCP Func
-bool Listener::BindIOCP(Session* session) {
-	HANDLE IOCP_h = CreateIoCompletionPort((HANDLE)session->clientSocket, 
-		IOCP_Handler, 
-		(ULONG_PTR)session, 
-		0);
-	if (IOCP_h == NULL || IOCP_Handler != IOCP_h)
-		return false;
-	return true;
-}
-
-bool Listener::BindRecv(Session* session) {
-	DWORD flag = 0;
-	DWORD RecvBytesNum = 0;
-
-	session->RecvOverlappedEx.wsaBuf.len = SOCK_BUF_SIZE;
-	session->RecvOverlappedEx.wsaBuf.buf = session->recvBuf;
-	session->RecvOverlappedEx.operation = IOOperation::RECV;
-
-	int result = WSARecv(session->clientSocket,
-		&(session->RecvOverlappedEx.wsaBuf),
-		1,
-		&RecvBytesNum,
-		&flag,
-		(LPWSAOVERLAPPED) & (session->RecvOverlappedEx),
-		NULL);
-	if (result == SOCKET_ERROR && (WSAGetLastError() != ERROR_IO_PENDING)) {
-		puts("ERROR : WSA Recv() occurred");
-		return false;
-	}
-	return true;
-}
-
-bool Listener::SendMsg(Session* session, char* msg, int msgLen) {
-	DWORD SendBytesNum;
-
-	CopyMemory(session->sendBuf, msg, msgLen);
-
-	session->SendOverlappedEx.wsaBuf.len = msgLen;
-	session->SendOverlappedEx.wsaBuf.buf = session->sendBuf;
-	session->SendOverlappedEx.operation = IOOperation::SEND;
-
-	int result = WSASend(session->clientSocket,
-		&(session->SendOverlappedEx.wsaBuf),
-		1,
-		&SendBytesNum,
-		0,
-		(LPWSAOVERLAPPED) & (session->SendOverlappedEx),
-		NULL);
-	if (result == SOCKET_ERROR || (WSAGetLastError() != ERROR_IO_PENDING))
-	{
-		puts("ERROR : WSA Send() occured");
-		return false;
-	}
-
-	return true;
+bool Listener::SendPacket(UINT32 index, char* packet, int transferSize) {
+	Session* pSession = GetSession(index);
+	return pSession->SendPacket(transferSize, packet);
 }
 #pragma endregion
 
@@ -166,10 +123,8 @@ bool Listener::WaitingClient(SOCKET listenSocket) {
 
 #pragma region Close Func
 void Listener::CloseClient(Session* session) {
-	shutdown(session->clientSocket, SD_BOTH);
-	closesocket(session->clientSocket);
-	session->clientSocket = INVALID_SOCKET;
-	OnDisconnect(session);
+	session->Close();
+	OnDisconnect(session->GetIndex());
 }
 
 void Listener::CloseAllClient() {
@@ -212,12 +167,12 @@ DWORD WINAPI Listener::WorkerThreadFunc() {
 		OverlappedEx* pOverlappedEx = (OverlappedEx*)pWol;
 		switch (pOverlappedEx->operation) {
 		case IOOperation::RECV:
-			OnRecv(pSession, pSession->recvBuf, transferSize);
-			SendMsg(pSession, pSession->recvBuf, transferSize);
-			BindRecv(pSession);
+			OnRecv(pSession, pSession->GetRecvBuffer(), transferSize);
+			pSession->BindRecv();
 			break;
 		case IOOperation::SEND:
-			OnSend(pSession, pSession->sendBuf, transferSize);
+			OnSend(pSession, pSession->GetSendBuffer(), transferSize);
+			pSession->SendComplete(transferSize);
 			break;
 		default:
 			break;
@@ -234,17 +189,12 @@ DWORD WINAPI Listener::AcceptThreadFunc() {
 	while ((clientSocket = ::accept(listenSocket, &clientAddr, &addrSize))) {
 		
 		Session* pSession = GetEmptySession();
-		if (pSession->clientSocket == INVALID_SOCKET && pSession!=nullptr)
+		if (pSession->GetSocket() == INVALID_SOCKET && pSession != nullptr)
 			continue;
-
-		if (!BindIOCP(pSession))
-			return 1;
-
-		if (!BindRecv(pSession))
-			return 1;
-
-		puts("New Client Connected");
-		OnConnect(pSession);
+		if (pSession->OnConnect(IOCP_Handler, clientSocket)) {
+			puts("New Client Connected");
+		}
+		OnConnect(pSession->GetIndex());
 	}
 
 	return 0;

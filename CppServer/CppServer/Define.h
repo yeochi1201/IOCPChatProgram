@@ -1,4 +1,5 @@
 #pragma once
+
 #include <stdio.h>
 #include <tchar.h>
 #include <winsock2.h>
@@ -22,20 +23,4 @@ typedef struct OverlappedEx {
 	WSABUF wsaBuf;
 	IOOperation operation;
 }OverlappedEx;
-
-typedef struct Session {
-	int index = 0;
-	SOCKET clientSocket;
-	OverlappedEx RecvOverlappedEx;
-	OverlappedEx SendOverlappedEx;
-
-	char sendBuf[SOCK_BUF_SIZE];
-	char recvBuf[SOCK_BUF_SIZE];
-
-	Session() {
-		ZeroMemory(&RecvOverlappedEx, sizeof(OverlappedEx));
-		ZeroMemory(&SendOverlappedEx, sizeof(OverlappedEx));
-		clientSocket = INVALID_SOCKET;
-	}
-}Session;
 

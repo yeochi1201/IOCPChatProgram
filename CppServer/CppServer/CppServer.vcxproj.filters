@@ -27,6 +27,12 @@
     <ClCompile Include="Listener.cpp">
       <Filter>소스 파일\ServerCore</Filter>
     </ClCompile>
+    <ClCompile Include="Session.h">
+      <Filter>헤더 파일\ServerCoreHeader</Filter>
+    </ClCompile>
+    <ClCompile Include="Session.cpp">
+      <Filter>소스 파일\ServerCore</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Listener.h">
