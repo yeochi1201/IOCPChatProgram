@@ -26,7 +26,7 @@ public:
 		return true;
 	}
 
-	void Run(UINT portNum, UINT16 maxClient);
+	void Run(UINT16 portNum, UINT16 maxClient);
 	void End();
 private:
 	std::thread processThread;

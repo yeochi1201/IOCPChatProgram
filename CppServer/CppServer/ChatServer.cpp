@@ -1,6 +1,6 @@
 #include "ChatServer.h"
 
-void ChatServer::Run(UINT portNum, UINT16 maxClient) {
+void ChatServer::Run(UINT16 portNum, UINT16 maxClient) {
 	processThread = std::thread([this]() {ProcessPacket(); });
 
 	InitSocket(portNum, maxClient);
