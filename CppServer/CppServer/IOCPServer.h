@@ -18,21 +18,37 @@
 
 class IOCPServer {
 public:
+	IOCPServer() {
+
+	}
+	~IOCPServer() {
+		WSACleanup();
+	}
+
 	bool CloseServer();
 	bool InitSocket(UINT16 portNum, UINT16 maxClient);
 	void DestroyThread();
 	bool SendPacket(UINT32 index, char* packet, int transferSize);
 	//Event Func 
-	virtual bool OnConnect(UINT32 index);
-	virtual bool OnDisconnect(UINT32 index);
-	virtual bool OnSend(Session* session, char* buf, DWORD transfersize);
-	virtual bool OnRecv(Session* session, char* buf,DWORD transfersize);
+	virtual bool OnConnect(UINT32 index) {
+		printf("%d Client Connect", index);
+		return true;
+	}
+	virtual bool OnDisconnect(UINT32 index) {
+		printf("%d Client Disconnect", index);
+		return true;
+	}
+	virtual bool OnSend(Session* session, char* buf, DWORD transfersize) {
+		return true;
+	}
+	virtual bool OnRecv(Session* session, char* buf, DWORD transfersize) {
+		return true;
+	}
 	
 private:
-	SOCKET listenSocket;
-	CRITICAL_SECTION session_cs;
+	SOCKET listenSocket = INVALID_SOCKET;
 
-	HANDLE IOCP_Handler;
+	HANDLE IOCP_Handler = INVALID_HANDLE_VALUE;
 
 	std::list<std::thread> workerThreads;
 	std::thread acceptThread;

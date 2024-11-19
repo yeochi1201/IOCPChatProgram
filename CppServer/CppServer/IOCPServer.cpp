@@ -13,26 +13,6 @@ bool IOCPServer::InitIOCPHandler() {
 }
 #pragma endregion
 
-#pragma region Event Func
-bool IOCPServer::OnConnect(UINT32 index) {
-	printf("%d Client Connect", index);
-	return true;
-}
-
-bool IOCPServer::OnDisconnect(UINT32 index) {
-	printf("%d Client Disconnect", index);
-	return true;
-}
-
-bool IOCPServer::OnSend(Session* session, char* buf, DWORD transfersize) {
-	return true;
-}
-
-bool IOCPServer::OnRecv(Session* session, char* buf, DWORD transfersize) {
-	return true;
-}
-
-#pragma endregion
 
 #pragma region SessionFunc
 void IOCPServer::CreateSessions(UINT16 maxClient) {
@@ -139,7 +119,6 @@ bool IOCPServer::CloseServer() {
 
 	DestroyThread();
 
-	::DeleteCriticalSection(&session_cs);
 	WSACleanup();
 	return TRUE;
 }
