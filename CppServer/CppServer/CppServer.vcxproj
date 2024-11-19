@@ -127,14 +127,18 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Listener.cpp" />
+    <ClCompile Include="ChatServer.cpp" />
+    <ClCompile Include="IOCPServer.cpp" />
+    <ClCompile Include="Packet.cpp" />
     <ClCompile Include="Program.cpp" />
     <ClCompile Include="Session.cpp" />
     <ClCompile Include="Session.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Listener.h" />
+    <ClInclude Include="ChatServer.h" />
+    <ClInclude Include="IOCPServer.h" />
     <ClInclude Include="Define.h" />
+    <ClInclude Include="Packet.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

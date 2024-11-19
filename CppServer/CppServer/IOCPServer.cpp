@@ -1,8 +1,9 @@
-#include "Listener.h"
+#include "IOCPServer.h"
 #include "Define.h"
+#include "Session.h"
 
 #pragma region Handler
-bool Listener::InitIOCPHandler() {
+bool IOCPServer::InitIOCPHandler() {
 	IOCP_Handler = ::CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 0);
 	if (IOCP_Handler == NULL) {
 		puts("ERROR : Cant Create IOCP");
@@ -13,35 +14,35 @@ bool Listener::InitIOCPHandler() {
 #pragma endregion
 
 #pragma region Event Func
-bool Listener::OnConnect(UINT32 index) {
+bool IOCPServer::OnConnect(UINT32 index) {
 	printf("%d Client Connect", index);
 	return true;
 }
 
-bool Listener::OnDisconnect(UINT32 index) {
+bool IOCPServer::OnDisconnect(UINT32 index) {
 	printf("%d Client Disconnect", index);
 	return true;
 }
 
-bool Listener::OnSend(Session* session, char* buf, DWORD transfersize) {
+bool IOCPServer::OnSend(Session* session, char* buf, DWORD transfersize) {
 	return true;
 }
 
-bool Listener::OnRecv(Session* session, char* buf, DWORD transfersize) {
+bool IOCPServer::OnRecv(Session* session, char* buf, DWORD transfersize) {
 	return true;
 }
 
 #pragma endregion
 
 #pragma region SessionFunc
-void Listener::CreateSessions(UINT16 maxClient) {
+void IOCPServer::CreateSessions(UINT16 maxClient) {
 	for (int i = 0; i < maxClient; i++) {
 		Sessions.emplace_back();
 		Sessions[i].Init(i);
 	}
 }
 
-Session* Listener::GetEmptySession() {
+Session* IOCPServer::GetEmptySession() {
 	for (Session session : Sessions) {
 		if (!session.IsConnect())
 			return &session;
@@ -49,20 +50,20 @@ Session* Listener::GetEmptySession() {
 	return nullptr;
 }
 
-Session* Listener::GetSession(UINT32 index) {
+Session* IOCPServer::GetSession(UINT32 index) {
 	return &(Sessions[index]);
 }
 #pragma endregion
 
 #pragma region IOCP Func
-bool Listener::SendPacket(UINT32 index, char* packet, int transferSize) {
+bool IOCPServer::SendPacket(UINT32 index, char* packet, int transferSize) {
 	Session* pSession = GetSession(index);
 	return pSession->SendPacket(transferSize, packet);
 }
 #pragma endregion
 
 #pragma region Open Func
-bool Listener::InitSocket(UINT16 portNum, UINT16 maxClient) {
+bool IOCPServer::InitSocket(UINT16 portNum, UINT16 maxClient) {
 	ResetWinsock();
 	CreateSocket();
 	BindPort(portNum);
@@ -75,7 +76,7 @@ bool Listener::InitSocket(UINT16 portNum, UINT16 maxClient) {
 	return true;
 }
 
-bool Listener::ResetWinsock() {
+bool IOCPServer::ResetWinsock() {
 	WSADATA wsa = { 0 };
 	if (::WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
 		puts("ERROR : Failed to Reset Window Socket");
@@ -85,18 +86,18 @@ bool Listener::ResetWinsock() {
 	return true;
 }
 
-bool Listener::CreateSocket() {
+bool IOCPServer::CreateSocket() {
 	listenSocket = ::WSASocket(AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, 0, WSA_FLAG_OVERLAPPED);
 
 	if (listenSocket == INVALID_SOCKET) {
 		puts("ERROR : Failed to Create Listen Socket");
 		return false;
 	}
-	puts("Create Listener Socket");
+	puts("Create IOCPServer Socket");
 	return true;
 }
 
-bool Listener::BindPort(UINT16 portNum) {
+bool IOCPServer::BindPort(UINT16 portNum) {
 	SOCKADDR_IN serverAddress = { 0 };
 	serverAddress.sin_family = AF_INET;
 	serverAddress.sin_port = htons(portNum);
@@ -110,7 +111,7 @@ bool Listener::BindPort(UINT16 portNum) {
 	return true;
 }
 
-bool Listener::WaitingClient(SOCKET listenSocket) {
+bool IOCPServer::WaitingClient(SOCKET listenSocket) {
 	if (::listen(listenSocket, SOMAXCONN) == SOCKET_ERROR) {
 		puts("ERROR : Failed to Listen");
 		CloseServer();
@@ -122,18 +123,18 @@ bool Listener::WaitingClient(SOCKET listenSocket) {
 #pragma endregion
 
 #pragma region Close Func
-void Listener::CloseClient(Session* session) {
+void IOCPServer::CloseClient(Session* session) {
 	session->Close();
 	OnDisconnect(session->GetIndex());
 }
 
-void Listener::CloseAllClient() {
+void IOCPServer::CloseAllClient() {
 	for (Session session : Sessions) {
 		CloseClient(&session);
 	}
 }
 
-bool Listener::CloseServer() {
+bool IOCPServer::CloseServer() {
 	CloseAllClient();
 
 	DestroyThread();
@@ -145,7 +146,7 @@ bool Listener::CloseServer() {
 #pragma endregion
 
 #pragma region Thread Func
-DWORD WINAPI Listener::WorkerThreadFunc() {
+DWORD WINAPI IOCPServer::WorkerThreadFunc() {
 	DWORD transferSize = 0;
 	Session* pSession = NULL;
 	LPOVERLAPPED pWol = NULL;
@@ -181,7 +182,7 @@ DWORD WINAPI Listener::WorkerThreadFunc() {
 	return 0;
 }
 
-DWORD WINAPI Listener::AcceptThreadFunc() {
+DWORD WINAPI IOCPServer::AcceptThreadFunc() {
 	int addrSize = sizeof(SOCKADDR);
 	SOCKADDR clientAddr;
 	SOCKET clientSocket;
@@ -200,7 +201,7 @@ DWORD WINAPI Listener::AcceptThreadFunc() {
 	return 0;
 }
 
-bool Listener::CreateWorkerThread() {
+bool IOCPServer::CreateWorkerThread() {
 	DWORD threadID = 0;
 	for (int i = 0; i < MAX_THREAD_CNT; i++) {
 		workerThreads.emplace_back([this]() {WorkerThreadFunc(); });
@@ -209,7 +210,7 @@ bool Listener::CreateWorkerThread() {
 	return true;
 }
 
-bool Listener::CreateAcceptThread() {
+bool IOCPServer::CreateAcceptThread() {
 	DWORD threadID = 0;
 
 	acceptThread = std::thread([this]() {AcceptThreadFunc(); });
@@ -217,7 +218,7 @@ bool Listener::CreateAcceptThread() {
 	return true;
 }
 
-void Listener::DestroyThread() {
+void IOCPServer::DestroyThread() {
 	CloseHandle(IOCP_Handler);
 
 	for (auto& th : workerThreads) {

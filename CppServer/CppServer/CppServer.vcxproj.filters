@@ -24,7 +24,7 @@
     <ClCompile Include="Program.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="Listener.cpp">
+    <ClCompile Include="IOCPServer.cpp">
       <Filter>소스 파일\ServerCore</Filter>
     </ClCompile>
     <ClCompile Include="Session.h">
@@ -33,13 +33,25 @@
     <ClCompile Include="Session.cpp">
       <Filter>소스 파일\ServerCore</Filter>
     </ClCompile>
+    <ClCompile Include="ChatServer.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Packet.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Listener.h">
+    <ClInclude Include="IOCPServer.h">
       <Filter>헤더 파일\ServerCoreHeader</Filter>
     </ClInclude>
     <ClInclude Include="Define.h">
       <Filter>헤더 파일\ServerCoreHeader</Filter>
+    </ClInclude>
+    <ClInclude Include="ChatServer.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Packet.h">
+      <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
