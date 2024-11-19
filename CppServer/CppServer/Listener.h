@@ -9,49 +9,64 @@
 
 #include <list>
 #include <iterator>
+#include <thread>
+#include <vector>
+#include "Define.h"
+
 #include<windows.h>
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 
-#define MAX_THREAD_CNT	8
-
-typedef struct Session {
-	SOCKET clientSocket;
-	char buffer[8192];
-}Session;
-
-
 class Listener {
 public:
-
-	std::list<SOCKET> socket_list;
-	CRITICAL_SECTION socket_cs;
-	Listener();
+	SOCKET listenSocket;
+	CRITICAL_SECTION session_cs;
+	
 	HANDLE IOCP_Handler;
 
-	void SendChattingMessage(char* pszParam, SOCKET clientSocket);
+	std::list<std::thread> workerThreads;
+	std::thread acceptThread;
+	std::vector<Session> Sessions;
+
 	bool CloseServer();
+	bool InitSocket(UINT16 portNum, UINT16 maxClient);
+	//Event Func 
+	virtual bool OnConnect(Session* Session);
+	virtual bool OnDisconnect(Session* session);
+	virtual bool OnSend(Session* session, char* buf, DWORD transfersize);
+	virtual bool OnRecv(Session* session, char* buf,DWORD transfersize);
 
-	//Handler Function
-	bool CloseSocketHandler(DWORD dwType);
 	//Thread
-	DWORD WINAPI CompleteThreadFunc(LPVOID param);
-	DWORD WINAPI AcceptThreadFunc(LPVOID param);
-private:
-	//Main Function
-	void StartProgram();
 
-	//Start ListenSocket Func
+private:
+	//Handler
+	bool InitIOCPHandler();
+
+	//Open Func
+	
 	bool ResetWinsock();
 	bool CreateSocket();
-	bool BindPort();
+	bool BindPort(UINT16 portNum);
 	bool WaitingClient(SOCKET listenSocket);
-
-	void CloseClient(SOCKET clientSocket);
+	
+	//Close Func
+	void CloseClient(Session* session);
 	void CloseAllClient();
 	
-	//Handler
-	bool InitCtrlHandler();
-	bool InitIOCPHandler();
+	//Session Func
+	void CreateSessions(UINT16 maxClient);
+	Session* GetEmptySession();
+
+	//IOCP Func
+	bool BindIOCP(Session* session);
+	bool BindRecv(Session* session);
+	bool SendMsg(Session* session, char* msg, int msgLen);
+	
+	//Thread Func
+	void DestroyThread();
+	bool CreateWorkerThread();
+	bool CreateAcceptThread();
+	DWORD WINAPI WorkerThreadFunc();
+	DWORD WINAPI AcceptThreadFunc();
 
 };
 #endif

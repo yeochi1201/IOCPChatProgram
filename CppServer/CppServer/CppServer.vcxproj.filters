@@ -13,18 +13,27 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="소스 파일\ServerCore">
+      <UniqueIdentifier>{299e979a-8e95-4a44-a8f4-d1ce4aca10b2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\ServerCoreHeader">
+      <UniqueIdentifier>{eb90817b-1c91-4eb7-b7d7-79cbfa1cbffb}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Listener.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
     <ClCompile Include="Program.cpp">
       <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Listener.cpp">
+      <Filter>소스 파일\ServerCore</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Listener.h">
-      <Filter>헤더 파일</Filter>
+      <Filter>헤더 파일\ServerCoreHeader</Filter>
+    </ClInclude>
+    <ClInclude Include="Define.h">
+      <Filter>헤더 파일\ServerCoreHeader</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
