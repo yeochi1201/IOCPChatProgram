@@ -32,11 +32,11 @@ public:
 	bool SendPacket(UINT32 index, char* packet, int transferSize);
 	//Event Func 
 	virtual bool OnConnect(UINT32 index) {
-		printf("%d Client Connect", index);
+		printf("%d Client Connect\n", index);
 		return true;
 	}
 	virtual bool OnDisconnect(UINT32 index) {
-		printf("%d Client Disconnect", index);
+		printf("%d Client Disconnect\n", index);
 		return true;
 	}
 	virtual bool OnSend(Session* session, char* buf, DWORD transfersize) {

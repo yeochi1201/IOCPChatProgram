@@ -21,7 +21,7 @@ public:
 		return true;
 	}
 	virtual bool OnRecv(Session* session, char* buf, DWORD transfersize) override {
-		printf("[Receive] clientIdx : %d, dataSize : %d", session->GetIndex(), transfersize);
+		printf("[Receive] clientIdx : %d, dataSize : %d\n", session->GetIndex(), transfersize);
 
 		Packet packet;
 		packet.Set(session->GetIndex(), transfersize, buf);

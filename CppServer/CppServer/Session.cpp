@@ -12,6 +12,8 @@ void Session::Init(UINT32 index) {
 bool Session::OnConnect(HANDLE iocpHandle, SOCKET clientSocket) {
 	this->clientSocket = clientSocket;
 
+	Clear();
+
 	if (!BindIOCP(iocpHandle))
 		return false;
 	return BindRecv();
@@ -48,6 +50,7 @@ bool Session::BindRecv() {
 		&flag,
 		(LPWSAOVERLAPPED) & (RecvOverlappedEx),
 		NULL);
+
 	if (result == SOCKET_ERROR && (WSAGetLastError() != ERROR_IO_PENDING)) {
 		puts("ERROR : WSA Recv() occurred");
 		return false;
@@ -56,7 +59,7 @@ bool Session::BindRecv() {
 }
 
 bool Session::SendPacket(UINT32 transferSize, char* packet) {
-	DWORD SendBytesNum;
+	DWORD SendBytesNum = 0;
 
 	CopyMemory(sendBuf, packet, transferSize);
 
@@ -72,9 +75,9 @@ bool Session::SendPacket(UINT32 transferSize, char* packet) {
 		(LPWSAOVERLAPPED) & (SendOverlappedEx),
 		NULL);
 
-	if (result == SOCKET_ERROR || (WSAGetLastError() != ERROR_IO_PENDING))
+	if (result == SOCKET_ERROR && (WSAGetLastError() != ERROR_IO_PENDING))
 	{
-		puts("ERROR : WSA Send() occured");
+		printf("ERROR : WSA Send() occured : %d\n", WSAGetLastError());
 		return false;
 	}
 

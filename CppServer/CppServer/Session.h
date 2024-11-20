@@ -40,4 +40,5 @@ private:
 
 	char sendBuf[SOCK_BUF_SIZE];
 	char recvBuf[SOCK_BUF_SIZE];
+	void Clear(){}
 };

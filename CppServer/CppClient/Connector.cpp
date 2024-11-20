@@ -45,7 +45,7 @@ bool Connector::BindPort() {
 	SOCKADDR_IN serverAddress = { 0 };
 	serverAddress.sin_family = AF_INET;
 	serverAddress.sin_port = htons(25000);
-	serverAddress.sin_addr.S_un.S_addr = inet_addr("192.168.0.2");
+	serverAddress.sin_addr.S_un.S_addr = inet_addr("127.0.0.1");
 	if (::connect(clientSocket, (SOCKADDR*)&serverAddress, sizeof(serverAddress)) == SOCKET_ERROR) {
 		puts("ERROR : Failed Connect Server");
 		return false;

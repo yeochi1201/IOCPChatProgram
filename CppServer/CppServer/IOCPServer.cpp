@@ -22,9 +22,9 @@ void IOCPServer::CreateSessions(UINT16 maxClient) {
 }
 
 Session* IOCPServer::GetEmptySession() {
-	for (Session session : Sessions) {
-		if (!session.IsConnect())
-			return &session;
+	for (int i = 0; i < Sessions.size(); i++) {
+		if (!Sessions[i].IsConnect())
+			return &Sessions[i];
 	}
 	return nullptr;
 }
@@ -49,8 +49,8 @@ bool IOCPServer::InitSocket(UINT16 portNum, UINT16 maxClient) {
 	WaitingClient(listenSocket);
 	CreateSessions(maxClient);
 	InitIOCPHandler();
-	CreateWorkerThread();
 	CreateAcceptThread();
+	CreateWorkerThread();
 
 	return true;
 }
@@ -168,12 +168,11 @@ DWORD WINAPI IOCPServer::AcceptThreadFunc() {
 	while ((clientSocket = ::accept(listenSocket, &clientAddr, &addrSize))) {
 		
 		Session* pSession = GetEmptySession();
-		if (pSession->GetSocket() == INVALID_SOCKET && pSession != nullptr)
+		if (pSession->GetSocket() != INVALID_SOCKET || pSession == nullptr)
 			continue;
 		if (pSession->OnConnect(IOCP_Handler, clientSocket)) {
-			puts("New Client Connected");
-		}
-		OnConnect(pSession->GetIndex());
+			OnConnect(pSession->GetIndex());
+		}	
 	}
 
 	return 0;
