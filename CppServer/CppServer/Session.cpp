@@ -5,6 +5,7 @@ Session::Session() {
 	ZeroMemory(&recvBuf, sizeof(SOCK_BUF_SIZE));
 	clientSocket = INVALID_SOCKET;
 }
+
 void Session::Init(UINT32 index) {
 	this->index = index;
 }

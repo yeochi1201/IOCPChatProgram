@@ -1,6 +1,5 @@
 #include "IOCPServer.h"
 #include "Define.h"
-#include "Session.h"
 
 #pragma region Handler
 bool IOCPServer::InitIOCPHandler() {
@@ -18,22 +17,22 @@ void IOCPServer::CreateSessions(UINT16 maxClient) {
 	std::lock_guard<std::mutex>guard(sessionLock);
 	for (int i = 0; i < maxClient; i++) {
 		Sessions.emplace_back();
-		Sessions[i].Init(i);
+		Sessions[i]->Init(i);
 	}
 }
 
 Session* IOCPServer::GetEmptySession() {
 	std::lock_guard<std::mutex>guard(sessionLock);
 	for (int i = 0; i < Sessions.size(); i++) {
-		if (!Sessions[i].IsConnect())
-			return &Sessions[i];
+		if (!Sessions[i]->IsConnect())
+			return Sessions[i];
 	}
 	return nullptr;
 }
 
 Session* IOCPServer::GetSession(UINT32 index) {
 	std::lock_guard<std::mutex>guard(sessionLock);
-	return &(Sessions[index]);
+	return Sessions[index];
 }
 #pragma endregion
 
@@ -113,7 +112,7 @@ void IOCPServer::CloseClient(Session* session) {
 void IOCPServer::CloseAllClient() {
 	std::lock_guard<std::mutex>guard(sessionLock);
 	for (int i = 0; i < Sessions.size(); i++) {
-		CloseClient(&(Sessions[i]));
+		CloseClient(Sessions[i]);
 	}
 }
 

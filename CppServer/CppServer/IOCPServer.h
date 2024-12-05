@@ -54,7 +54,7 @@ private:
 
 	std::list<std::thread> workerThreads;
 	std::thread acceptThread;
-	std::vector<Session> Sessions;
+	std::vector<Session*> Sessions;
 	std::mutex sessionLock;
 
 	//Handler
