@@ -12,7 +12,7 @@ public:
 	void Set(UINT32 sessionIdx, UINT32 dataSize, char* data);
 	void Release();
 private:
-	UINT32 sessionIdx;
-	UINT32 dataSize;
+	UINT32 sessionIdx = 0;
+	UINT32 dataSize = 0;
 	char* data = nullptr;
 };
