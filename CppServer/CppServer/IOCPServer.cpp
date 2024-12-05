@@ -15,6 +15,7 @@ bool IOCPServer::InitIOCPHandler() {
 
 #pragma region SessionFunc
 void IOCPServer::CreateSessions(UINT16 maxClient) {
+	std::lock_guard<std::mutex>guard(sessionLock);
 	for (int i = 0; i < maxClient; i++) {
 		Sessions.emplace_back();
 		Sessions[i].Init(i);
@@ -22,6 +23,7 @@ void IOCPServer::CreateSessions(UINT16 maxClient) {
 }
 
 Session* IOCPServer::GetEmptySession() {
+	std::lock_guard<std::mutex>guard(sessionLock);
 	for (int i = 0; i < Sessions.size(); i++) {
 		if (!Sessions[i].IsConnect())
 			return &Sessions[i];
@@ -30,6 +32,7 @@ Session* IOCPServer::GetEmptySession() {
 }
 
 Session* IOCPServer::GetSession(UINT32 index) {
+	std::lock_guard<std::mutex>guard(sessionLock);
 	return &(Sessions[index]);
 }
 #pragma endregion
@@ -108,8 +111,9 @@ void IOCPServer::CloseClient(Session* session) {
 }
 
 void IOCPServer::CloseAllClient() {
-	for (Session session : Sessions) {
-		CloseClient(&session);
+	std::lock_guard<std::mutex>guard(sessionLock);
+	for (int i = 0; i < Sessions.size(); i++) {
+		CloseClient(&(Sessions[i]));
 	}
 }
 
@@ -150,7 +154,6 @@ DWORD WINAPI IOCPServer::WorkerThreadFunc() {
 			pSession->BindRecv();
 			break;
 		case IOOperation::SEND:
-			OnSend(pSession, pSession->GetSendBuffer(), transferSize);
 			pSession->SendComplete(transferSize);
 			break;
 		default:

@@ -1,4 +1,5 @@
 #include "Packet.h"
+
 UINT32 Packet::GetIdx() {
 	return sessionIdx;
 }

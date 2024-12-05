@@ -2,6 +2,8 @@
 
 #include "Define.h"
 #include <stdio.h>
+#include <queue>
+#include <mutex>
 
 class Session {
 public:
@@ -20,9 +22,6 @@ public:
 	char* GetRecvBuffer() {
 		return recvBuf;
 	}
-	char* GetSendBuffer() {
-		return sendBuf;
-	}
 
 	bool OnConnect(HANDLE iocpHandle, SOCKET clientSocket);
 	void Close();
@@ -34,11 +33,13 @@ public:
 
 private:
 	int index = 0;
+	std::queue<OverlappedEx*> sendDataQueue;
+	std::mutex sendLock;
+
 	SOCKET clientSocket;
 	OverlappedEx RecvOverlappedEx;
-	OverlappedEx SendOverlappedEx;
-
-	char sendBuf[SOCK_BUF_SIZE];
 	char recvBuf[SOCK_BUF_SIZE];
+
 	void Clear(){}
+	bool SendIO();
 };

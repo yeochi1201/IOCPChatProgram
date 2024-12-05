@@ -2,7 +2,7 @@
 
 Session::Session() {
 	ZeroMemory(&RecvOverlappedEx, sizeof(OverlappedEx));
-	ZeroMemory(&SendOverlappedEx, sizeof(OverlappedEx));
+	ZeroMemory(&recvBuf, sizeof(SOCK_BUF_SIZE));
 	clientSocket = INVALID_SOCKET;
 }
 void Session::Init(UINT32 index) {
@@ -59,31 +59,54 @@ bool Session::BindRecv() {
 }
 
 bool Session::SendPacket(UINT32 transferSize, char* packet) {
+	OverlappedEx* sendOverlappedEx = new OverlappedEx;
+	ZeroMemory(sendOverlappedEx, sizeof(OverlappedEx));
 	DWORD SendBytesNum = 0;
 
-	CopyMemory(sendBuf, packet, transferSize);
+	sendOverlappedEx->wsaBuf.len = transferSize;
+	sendOverlappedEx->wsaBuf.buf = new char[transferSize];
+	CopyMemory(sendOverlappedEx->wsaBuf.buf, packet, transferSize);
+	sendOverlappedEx->operation = IOOperation::SEND;
 
-	SendOverlappedEx.wsaBuf.len = transferSize;
-	SendOverlappedEx.wsaBuf.buf = sendBuf;
-	SendOverlappedEx.operation = IOOperation::SEND;
+	std::lock_guard<std::mutex>guard(sendLock);
 
-	int result = WSASend(clientSocket,
-		&(SendOverlappedEx.wsaBuf),
-		1,
-		&SendBytesNum,
-		0,
-		(LPWSAOVERLAPPED) & (SendOverlappedEx),
-		NULL);
-
-	if (result == SOCKET_ERROR && (WSAGetLastError() != ERROR_IO_PENDING))
+	sendDataQueue.push(sendOverlappedEx);
+	if (sendDataQueue.size() == 1)
 	{
-		printf("ERROR : WSA Send() occured : %d\n", WSAGetLastError());
+		SendIO();
+	}
+	return true;
+}
+
+bool Session::SendIO()
+{
+	OverlappedEx* sendData = sendDataQueue.front();
+	DWORD recvNum = 0;
+	int ret = WSASend(clientSocket,
+		&(sendData->wsaBuf),
+		1,
+		&recvNum,
+		0,
+		(LPWSAOVERLAPPED)sendData,
+		NULL);
+	if (ret == SOCKET_ERROR && (WSAGetLastError() != ERROR_IO_PENDING)) {
+		printf("ERROR : WSASend() Function : %d\n", WSAGetLastError());
 		return false;
 	}
-
 	return true;
 }
 
 void Session::SendComplete(UINT32 transferSize) {
 	printf("[Send Complete] bytes : %d\n", transferSize);
+
+	std::lock_guard<std::mutex> guard(sendLock);
+	delete[] sendDataQueue.front()->wsaBuf.buf;
+	delete sendDataQueue.front();
+
+	sendDataQueue.pop();
+
+	if (sendDataQueue.empty() == false) {
+		SendIO();
+	}
+
 }
