@@ -16,8 +16,9 @@ bool IOCPServer::InitIOCPHandler() {
 void IOCPServer::CreateSessions(UINT16 maxClient) {
 	std::lock_guard<std::mutex>guard(sessionLock);
 	for (int i = 0; i < maxClient; i++) {
-		Sessions.emplace_back();
-		Sessions[i]->Init(i);
+		Session* session = new Session;
+		session->Init(i);
+		Sessions.push_back(session);
 	}
 }
 
