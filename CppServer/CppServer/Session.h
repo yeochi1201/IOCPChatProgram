@@ -8,7 +8,7 @@ class Session {
 public:
 	Session();
 
-	void Init(UINT32 index);
+	void Init(UINT32 index, HANDLE iocpHandle);
 	UINT32 GetIndex() {
 		return index;
 	}
@@ -24,8 +24,12 @@ public:
 	char* GetAccpetBuffer() {
 		return acceptBuf;
 	}
+	UINT64 GetLatestClosedTimeSec() {
+		return latestClosedTime;
+	}
 	
-	bool Accept(SOCKET listenSocket);
+	bool Accept(SOCKET listenSocket, const UINT64 curTimeSec);
+	bool AcceptComplete();
 	bool OnConnect(HANDLE iocpHandle, SOCKET clientSocket);
 	void Close();
 	
@@ -37,6 +41,9 @@ public:
 
 private:
 	int index = 0;
+	HANDLE IOCPHandle = INVALID_HANDLE_VALUE;
+	UINT64 latestClosedTime;
+	
 	std::queue<OverlappedEx*> sendDataQueue;
 	std::mutex sendLock;
 

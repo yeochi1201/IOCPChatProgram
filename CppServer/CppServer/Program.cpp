@@ -5,7 +5,7 @@
 int main() {
 	ChatServer* Server = new ChatServer();
 
-	Server->Run(25000, 100);
+	Server->Run(25000, 10);
 	while (true) {
 		std::string input;
 		std::getline(std::cin, input);

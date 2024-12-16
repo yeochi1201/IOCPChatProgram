@@ -12,6 +12,7 @@
 
 #define SOCK_BUF_SIZE 8192
 #define MAX_THREAD_CNT	8
+#define RE_USE_SESSION_WAIT_TIMESEC 3
 
 enum class IOOperation {
 	RECV,

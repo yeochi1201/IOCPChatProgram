@@ -6,14 +6,15 @@ Session::Session() {
 	clientSocket = INVALID_SOCKET;
 }
 
-void Session::Init(UINT32 index) {
+void Session::Init(UINT32 index, HANDLE iocpHandle) {
 	this->index = index;
+	IOCPHandle = iocpHandle;
 }
 
-bool Session::Accept(SOCKET listenSocket) {
-	printf("Accept Wait Start %d client\n", index);
+bool Session::Accept(SOCKET listenSocket, const UINT64 curTimeSec) {
+	latestClosedTime = UINT32_MAX;
 
-	clientSocket = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
+	clientSocket = WSASocket(AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, 0, WSA_FLAG_OVERLAPPED);
 	if (clientSocket == INVALID_SOCKET) {
 		printf("client WSASocket ERROR : %d\n", GetLastError());
 		return false;
@@ -41,12 +42,21 @@ bool Session::Accept(SOCKET listenSocket) {
 			return false;
 		}
 	}
+	printf("Accept Wait Start %d client\n", index);
 	return true;
 }
 
+bool Session::AcceptComplete() {
+	printf("Accept Start %d client\n", index);
+	if (OnConnect(IOCPHandle, clientSocket) == false)
+		return false;
+	
+	return true;
+}
+
+
 bool Session::OnConnect(HANDLE iocpHandle, SOCKET clientSocket) {
 	this->clientSocket = clientSocket;
-
 	Clear();
 
 	if (!BindIOCP(iocpHandle))
@@ -56,6 +66,7 @@ bool Session::OnConnect(HANDLE iocpHandle, SOCKET clientSocket) {
 
 void Session::Close() {
 	shutdown(clientSocket, SD_BOTH);
+	latestClosedTime = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 	closesocket(clientSocket);
 	clientSocket = INVALID_SOCKET;
 }
@@ -97,12 +108,12 @@ bool Session::BindRecv() {
 bool Session::SendPacket(UINT32 transferSize, char* packet) {
 	OverlappedEx* sendOverlappedEx = new OverlappedEx;
 	ZeroMemory(sendOverlappedEx, sizeof(OverlappedEx));
-	DWORD SendBytesNum = 0;
 
 	sendOverlappedEx->wsaBuf.len = transferSize;
 	sendOverlappedEx->wsaBuf.buf = new char[transferSize];
 	CopyMemory(sendOverlappedEx->wsaBuf.buf, packet, transferSize);
 	sendOverlappedEx->operation = IOOperation::SEND;
+	sendOverlappedEx->sessionIndex = index;
 
 	std::lock_guard<std::mutex>guard(sendLock);
 

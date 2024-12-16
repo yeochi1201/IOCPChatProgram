@@ -3,9 +3,14 @@
 
 #pragma region Handler
 bool IOCPServer::InitIOCPHandler() {
-	IOCP_Handler = ::CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 0);
+	IOCP_Handler = ::CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, MAX_THREAD_CNT);
 	if (IOCP_Handler == NULL) {
 		puts("ERROR : Cant Create IOCP");
+		return FALSE;
+	}
+	auto IOCPHandle = CreateIoCompletionPort((HANDLE)listenSocket, IOCP_Handler, (UINT32)0, 0);
+	if (IOCPHandle == NULL) {
+		puts("ERROR : Cant Create listen IOCP");
 		return FALSE;
 	}
 	return TRUE;
@@ -17,7 +22,7 @@ void IOCPServer::CreateSessions(UINT16 maxClient) {
 	std::lock_guard<std::mutex>guard(sessionLock);
 	for (int i = 0; i < maxClient; i++) {
 		Session* session = new Session;
-		session->Init(i);
+		session->Init(i, IOCP_Handler);
 		Sessions.push_back(session);
 	}
 }
@@ -50,8 +55,8 @@ bool IOCPServer::InitSocket(UINT16 portNum, UINT16 maxClient) {
 	CreateSocket();
 	BindPort(portNum);
 	WaitingClient(listenSocket);
-	CreateSessions(maxClient);
 	InitIOCPHandler();
+	CreateSessions(maxClient);
 	CreateAcceptThread();
 	CreateWorkerThread();
 
@@ -141,14 +146,21 @@ DWORD WINAPI IOCPServer::WorkerThreadFunc() {
 		if (result == TRUE && transferSize == 0 && pWol == NULL) {
 			continue;
 		}
-		if (result == FALSE || (transferSize == 0 && result == TRUE)) {
+
+		OverlappedEx* overlappedEx = (OverlappedEx*)pWol;
+		if (result == FALSE || (transferSize == 0 && overlappedEx->operation != IOOperation::ACCEPT)) {
 			puts(" ClientSocket Disconnect or Server Down");
 			CloseClient(pSession);
 			continue;
 		}
 
-		OverlappedEx* pOverlappedEx = (OverlappedEx*)pWol;
-		switch (pOverlappedEx->operation) {
+		pSession = GetSession(overlappedEx->sessionIndex);
+		switch (overlappedEx->operation) {
+		case IOOperation::ACCEPT:
+			if (pSession->AcceptComplete()) {
+				OnConnect(pSession->GetIndex());
+			}
+			break;
 		case IOOperation::RECV:
 			OnRecv(pSession, pSession->GetRecvBuffer(), transferSize);
 			pSession->BindRecv();
@@ -164,16 +176,17 @@ DWORD WINAPI IOCPServer::WorkerThreadFunc() {
 }
 
 DWORD WINAPI IOCPServer::AcceptThreadFunc() {
-	int addrSize = sizeof(SOCKADDR);
-	SOCKADDR clientAddr;
-	SOCKET clientSocket;
-
 	while (true) {
-		for (int i = 0; Sessions.size(); i++) {
+		auto curTimeSec = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+
+		for (int i = 0; i<Sessions.size(); i++) {
 			Session* session = Sessions[i];
 			if (session->IsConnect()) continue;
-			session->Accept(listenSocket);
+			if ((UINT64)curTimeSec < session->GetLatestClosedTimeSec())continue;
+			if (curTimeSec - session->GetLatestClosedTimeSec() <= RE_USE_SESSION_WAIT_TIMESEC) continue;
+			session->Accept(listenSocket, curTimeSec);
 		}
+		std::this_thread::sleep_for(std::chrono::milliseconds(32));
 	}
 
 	return 0;
