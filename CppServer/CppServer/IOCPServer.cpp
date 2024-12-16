@@ -168,14 +168,12 @@ DWORD WINAPI IOCPServer::AcceptThreadFunc() {
 	SOCKADDR clientAddr;
 	SOCKET clientSocket;
 
-	while ((clientSocket = ::accept(listenSocket, &clientAddr, &addrSize))) {
-		
-		Session* pSession = GetEmptySession();
-		if (pSession->GetSocket() != INVALID_SOCKET || pSession == nullptr)
-			continue;
-		if (pSession->OnConnect(IOCP_Handler, clientSocket)) {
-			OnConnect(pSession->GetIndex());
-		}	
+	while (true) {
+		for (int i = 0; Sessions.size(); i++) {
+			Session* session = Sessions[i];
+			if (session->IsConnect()) continue;
+			session->Accept(listenSocket);
+		}
 	}
 
 	return 0;

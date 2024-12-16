@@ -10,6 +10,40 @@ void Session::Init(UINT32 index) {
 	this->index = index;
 }
 
+bool Session::Accept(SOCKET listenSocket) {
+	printf("Accept Wait Start %d client\n", index);
+
+	clientSocket = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
+	if (clientSocket == INVALID_SOCKET) {
+		printf("client WSASocket ERROR : %d\n", GetLastError());
+		return false;
+	}
+	ZeroMemory(&acceptContext, sizeof(OverlappedEx));
+	acceptContext.wsaBuf.len = 0;
+	acceptContext.wsaBuf.buf = nullptr;
+	acceptContext.operation = IOOperation::ACCEPT;
+	acceptContext.sessionIndex = index;
+
+	DWORD bytes = 0;
+
+	if (AcceptEx(listenSocket,
+		clientSocket,
+		acceptBuf,
+		0,
+		sizeof(SOCKADDR_IN) + 16,
+		sizeof(SOCKADDR_IN) + 16,
+		&bytes,
+		(LPOVERLAPPED)&acceptContext)
+		== false) {
+
+		if (WSAGetLastError() != WSA_IO_PENDING) {
+			printf("AcceptEx Error : %d\n", GetLastError());
+			return false;
+		}
+	}
+	return true;
+}
+
 bool Session::OnConnect(HANDLE iocpHandle, SOCKET clientSocket) {
 	this->clientSocket = clientSocket;
 
@@ -43,6 +77,7 @@ bool Session::BindRecv() {
 	RecvOverlappedEx.wsaBuf.len = SOCK_BUF_SIZE;
 	RecvOverlappedEx.wsaBuf.buf = recvBuf;
 	RecvOverlappedEx.operation = IOOperation::RECV;
+	RecvOverlappedEx.sessionIndex = index;
 
 	int result = WSARecv(clientSocket,
 		&(RecvOverlappedEx.wsaBuf),

@@ -5,6 +5,7 @@
 #include <winsock2.h>
 #include <SDKDDKVer.h>
 #pragma comment(lib, "ws2_32")
+#pragma comment(lib, "mswsock.lib")
 
 #include <list>
 #include <iterator>

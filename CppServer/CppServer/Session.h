@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Define.h"
-#include <stdio.h>
 #include <queue>
 #include <mutex>
 
@@ -22,7 +21,11 @@ public:
 	char* GetRecvBuffer() {
 		return recvBuf;
 	}
-
+	char* GetAccpetBuffer() {
+		return acceptBuf;
+	}
+	
+	bool Accept(SOCKET listenSocket);
 	bool OnConnect(HANDLE iocpHandle, SOCKET clientSocket);
 	void Close();
 	
@@ -30,6 +33,7 @@ public:
 	bool BindRecv();
 	bool SendPacket(UINT32 transferSize, char* packet);
 	void SendComplete(UINT32 transferSize);
+	
 
 private:
 	int index = 0;
@@ -39,6 +43,9 @@ private:
 	SOCKET clientSocket;
 	OverlappedEx RecvOverlappedEx;
 	char recvBuf[SOCK_BUF_SIZE];
+	
+	OverlappedEx acceptContext;
+	char acceptBuf[64];
 
 	void Clear(){}
 	bool SendIO();
