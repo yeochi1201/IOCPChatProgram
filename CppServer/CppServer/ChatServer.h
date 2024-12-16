@@ -18,6 +18,7 @@ public:
 		return true;
 	}
 	virtual bool OnSend(Session* session, char* buf, DWORD transfersize) override {
+		printf("[Send] clientIdx : %d, dataSize : %d\n", session->GetIndex(), transfersize);
 		return true;
 	}
 	virtual bool OnRecv(Session* session, char* buf, DWORD transfersize) override {
@@ -37,7 +38,7 @@ private:
 	std::thread processThread;
 	std::mutex lock;
 	std::deque<Packet> packetDeque;
-
+	
 	void ProcessPacket();
 	Packet DequePacket();
 };

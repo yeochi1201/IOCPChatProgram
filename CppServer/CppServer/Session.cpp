@@ -6,13 +6,57 @@ Session::Session() {
 	clientSocket = INVALID_SOCKET;
 }
 
-void Session::Init(UINT32 index) {
+void Session::Init(UINT32 index, HANDLE iocpHandle) {
 	this->index = index;
+	IOCPHandle = iocpHandle;
 }
+
+bool Session::Accept(SOCKET listenSocket, const UINT64 curTimeSec) {
+	latestClosedTime = UINT32_MAX;
+
+	clientSocket = WSASocket(AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, 0, WSA_FLAG_OVERLAPPED);
+	if (clientSocket == INVALID_SOCKET) {
+		printf("client WSASocket ERROR : %d\n", GetLastError());
+		return false;
+	}
+	ZeroMemory(&acceptContext, sizeof(OverlappedEx));
+	acceptContext.wsaBuf.len = 0;
+	acceptContext.wsaBuf.buf = nullptr;
+	acceptContext.operation = IOOperation::ACCEPT;
+	acceptContext.sessionIndex = index;
+
+	DWORD bytes = 0;
+
+	if (AcceptEx(listenSocket,
+		clientSocket,
+		acceptBuf,
+		0,
+		sizeof(SOCKADDR_IN) + 16,
+		sizeof(SOCKADDR_IN) + 16,
+		&bytes,
+		(LPOVERLAPPED)&acceptContext)
+		== false) {
+
+		if (WSAGetLastError() != WSA_IO_PENDING) {
+			printf("AcceptEx Error : %d\n", GetLastError());
+			return false;
+		}
+	}
+	printf("Accept Wait Start %d client\n", index);
+	return true;
+}
+
+bool Session::AcceptComplete() {
+	printf("Accept Start %d client\n", index);
+	if (OnConnect(IOCPHandle, clientSocket) == false)
+		return false;
+	
+	return true;
+}
+
 
 bool Session::OnConnect(HANDLE iocpHandle, SOCKET clientSocket) {
 	this->clientSocket = clientSocket;
-
 	Clear();
 
 	if (!BindIOCP(iocpHandle))
@@ -22,6 +66,7 @@ bool Session::OnConnect(HANDLE iocpHandle, SOCKET clientSocket) {
 
 void Session::Close() {
 	shutdown(clientSocket, SD_BOTH);
+	latestClosedTime = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 	closesocket(clientSocket);
 	clientSocket = INVALID_SOCKET;
 }
@@ -43,6 +88,7 @@ bool Session::BindRecv() {
 	RecvOverlappedEx.wsaBuf.len = SOCK_BUF_SIZE;
 	RecvOverlappedEx.wsaBuf.buf = recvBuf;
 	RecvOverlappedEx.operation = IOOperation::RECV;
+	RecvOverlappedEx.sessionIndex = index;
 
 	int result = WSARecv(clientSocket,
 		&(RecvOverlappedEx.wsaBuf),
@@ -62,12 +108,12 @@ bool Session::BindRecv() {
 bool Session::SendPacket(UINT32 transferSize, char* packet) {
 	OverlappedEx* sendOverlappedEx = new OverlappedEx;
 	ZeroMemory(sendOverlappedEx, sizeof(OverlappedEx));
-	DWORD SendBytesNum = 0;
 
 	sendOverlappedEx->wsaBuf.len = transferSize;
 	sendOverlappedEx->wsaBuf.buf = new char[transferSize];
 	CopyMemory(sendOverlappedEx->wsaBuf.buf, packet, transferSize);
 	sendOverlappedEx->operation = IOOperation::SEND;
+	sendOverlappedEx->sessionIndex = index;
 
 	std::lock_guard<std::mutex>guard(sendLock);
 
